@@ -25,7 +25,7 @@ class Maze():
     x_down = 0
     y_down = 0
     
-    def __init__(self, width, height, seed=None, room=50):
+    def __init__(self, width, height, seed=None, room=None):
         """ コンストラクタ """
         # 迷路の横の大きさ
         self.width = width
@@ -35,6 +35,7 @@ class Maze():
         random.seed(seed)
         # 部屋の出現確率（0-100）
         #   ※実際には設置できないことがあるので、設定数値より少ない
+        self.room_init = room
         self.room_chance = room
     
     def make_maze(self):
@@ -53,10 +54,15 @@ class Maze():
     
     def initialize(self):
         """ 前処理 """
+        # 部屋の出現確率を設定
+        if self.room_init is None:
+            room = random.randrange(101)
+            print('room_chance = ' + str(room))
+            self.room_chance = room
+        # 壁で埋める
         self.maze_wall = []
         self.maze_door = []
         self.maze_contents = []
-        # 壁で埋める
         for x in range(self.width):
             row_wall = []
             row_door = []
@@ -248,13 +254,32 @@ class Maze():
     
     def finalize(self):
         """ 後処理 """
-        # 上りと下り階段をセット
-        self.x_up = random.randrange(self.width)
-        self.y_up = random.randrange(self.height)
-        self.maze_contents[self.y_up][self.x_up] |= const.EVENT_CEILING
-        self.x_down = random.randrange(self.width)
-        self.y_down = random.randrange(self.height)
-        self.maze_contents[self.y_down][self.x_down] |= const.EVENT_FLOOR
+        # 上り階段をセット
+        x = random.randrange(self.width)
+        y = random.randrange(self.height)
+        self.set_up_xy(x, y)
+        # 下り階段をセット
+        x = random.randrange(self.width)
+        y = random.randrange(self.height)
+        self.set_down_xy(x, y)
+    
+    def set_up_xy(self, x, y):
+        """ 上り階段の設定 """
+        # 削除
+        self.maze_contents[self.y_up][self.x_up] &= ~const.EVENT_CEILING
+        # 設定
+        self.maze_contents[y][x] |= const.EVENT_CEILING
+        self.x_up = x
+        self.y_up = y
+    
+    def set_down_xy(self, x, y):
+        """ 下り階段の設定 """
+        # 削除
+        self.maze_contents[self.y_down][self.x_down] &= ~const.EVENT_FLOOR
+        # 設定
+        self.maze_contents[y][x] |= const.EVENT_FLOOR
+        self.x_down = x
+        self.y_down = y
     
     def print_maze(self):
         """ 迷路を表示 """
@@ -314,39 +339,3 @@ class Maze():
         #print(map_row3)
         map_print.append(map_bottom)
         print(map_bottom)
-
-
-if __name__ == '__main__':
-    # テストコード
-    import time
-    #seed = time.time_ns() % (10 ** 9)
-    seed = 123
-    print('random.seed = ' + str(seed))
-    random.seed(seed)
-    random_state1 = random.getstate()
-    #print(random_state1)
-    maze = Maze(20, 20, room=50, seed=seed)
-    #maze = Maze(20, 20, room=50)
-    maze.make_maze()
-    maze.print_maze()
-    print()
-    random_state2 = random.getstate()
-    #print(random_state2 == random_state1)
-    
-    # 迷路作成後、乱数シード値を時間にすること
-    # モンスター出現確率などを固定にしないため
-    seed = time.time_ns() % (10 ** 9)
-    random.seed(seed)
-    
-    maze.next_maze(random_state=random_state1)
-    maze.print_maze()
-    print()
-    random_state3 = random.getstate()
-    #print(random_state3 == random_state1)
-    maze.next_maze(random_state=random_state1)
-    maze.print_maze()
-    print()
-    random_state4 = random.getstate()
-    #print(random_state4 == random_state1)
-    maze.next_maze(random_state=random_state1)
-    maze.print_maze()

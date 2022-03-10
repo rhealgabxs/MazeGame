@@ -283,31 +283,3 @@ class Draw3D:
         # 右下
         xy += (const.WIDTH / 2 + d2_x_right, const.HEIGHT / 2 + d2_y_right)
         return xy
-
-
-if __name__ == '__main__':
-    # テストコード
-    import time
-    #seed = time.time_ns() % (10 ** 9)
-    seed = 123
-    print('random.seed = ' + str(seed))
-    obj_maze = maze.Maze(20, 20, seed=seed, room=50)
-    obj_maze.make_maze()
-    obj_maze.print_maze()
-    
-    draw3d = Draw3D()
-    #img = draw3d.draw(obj_maze, 6, 3, const.DIR_SOUTH)
-    #img = draw3d.draw(obj_maze, 6, 0, const.DIR_SOUTH)
-    # イベント床
-    #img = draw3d.draw(obj_maze, 7, 17, const.DIR_NORTH)
-    # イベント天井
-    #img = draw3d.draw(obj_maze, 15, 19, const.DIR_NORTH)
-    # 扉（前）
-    #img = draw3d.draw(obj_maze, 5, 4, const.DIR_EAST)
-    # 扉（左）
-    #img = draw3d.draw(obj_maze, 6, 3, const.DIR_SOUTH)
-    # 扉（右）
-    img = draw3d.draw(obj_maze, 6, 5, const.DIR_NORTH)
-    
-    img.show()
-
