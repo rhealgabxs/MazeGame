@@ -72,8 +72,6 @@ class SearchMaze():
             direction_list.insert(0, direction_priority)
             # 移動可能方向
             cell = self.map_wall[y][x]
-            x_next = x
-            y_next = y
             for direction in direction_list:
                 x_next = x
                 y_next = y
