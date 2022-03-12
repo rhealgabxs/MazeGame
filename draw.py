@@ -6,7 +6,6 @@ import sys
 from PIL import Image, ImageDraw
 
 import const
-import maze
 
 
 class Draw3D:
@@ -15,7 +14,7 @@ class Draw3D:
     # 地図の参照順序
     #   左端→左側→右端→右側→真ん中 の順
     MAP_ORDER = list(range(const.VIEW)) \
-            + [const.VIEW * 2 - i for i in range(const.VIEW + 1)]
+            + [i for i in range(const.VIEW * 2, const.VIEW - 1, -1)]
     
     def __init__(self):
         """ コンストラクタ """
@@ -58,66 +57,49 @@ class Draw3D:
         view_wall = []
         view_door = []
         view_contents = []
+        # 見た方向の地図情報を取得
+        depth_range = None
+        depth_mod_b = None
+        lr_range = None
+        lr_mod_b = None
         if direction == const.DIR_EAST:
             # 東
-            for depth in range(x, x + const.VIEW + 1):
-                row_wall = []
-                row_door = []
-                row_contents = []
-                i = depth % len(maze_wall[0])
-                for lr in range(y - const.VIEW, y + const.VIEW + 1):
-                    j = lr % len(maze_wall)
-                    row_wall.append(maze_wall[j][i])
-                    row_door.append(maze_door[j][i])
-                    row_contents.append(maze_contents[j][i])
-                view_wall.append(row_wall)
-                view_door.append(row_door)
-                view_contents.append(row_contents)
+            depth_range = range(x, x + const.VIEW + 1)
+            lr_range = range(y - const.VIEW, y + const.VIEW + 1)
         elif direction == const.DIR_WEST:
             # 西
-            for depth in range(x, x - const.VIEW - 1, -1):
-                row_wall = []
-                row_door = []
-                row_contents = []
-                i = depth % len(maze_wall[0])
-                for lr in range(y + const.VIEW, y - const.VIEW - 1, -1):
-                    j = lr % len(maze_wall)
-                    row_wall.append(maze_wall[j][i])
-                    row_door.append(maze_door[j][i])
-                    row_contents.append(maze_contents[j][i])
-                view_wall.append(row_wall)
-                view_door.append(row_door)
-                view_contents.append(row_contents)
+            depth_range = range(x, x - const.VIEW - 1, -1)
+            lr_range = range(y + const.VIEW, y - const.VIEW - 1, -1)
         elif direction == const.DIR_SOUTH:
             # 南
-            for depth in range(y, y + const.VIEW + 1):
-                row_wall = []
-                row_door = []
-                row_contents = []
-                j = depth % len(maze_wall)
-                for lr in range(x + const.VIEW, x - const.VIEW - 1, -1):
-                    i = lr % len(maze_wall[0])
-                    row_wall.append(maze_wall[j][i])
-                    row_door.append(maze_door[j][i])
-                    row_contents.append(maze_contents[j][i])
-                view_wall.append(row_wall)
-                view_door.append(row_door)
-                view_contents.append(row_contents)
+            depth_range = range(y, y + const.VIEW + 1)
+            lr_range = range(x + const.VIEW, x - const.VIEW - 1, -1)
         elif direction == const.DIR_NORTH:
             # 北
-            for depth in range(y, y - const.VIEW - 1, -1):
-                row_wall = []
-                row_door = []
-                row_contents = []
-                j = depth % len(maze_wall)
-                for lr in range(x - const.VIEW, x + const.VIEW + 1):
+            depth_range = range(y, y - const.VIEW - 1, -1)
+            lr_range = range(x - const.VIEW, x + const.VIEW + 1)
+        # 情報取得
+        for depth in depth_range:
+            row_wall = []
+            row_door = []
+            row_contents = []
+            for lr in lr_range:
+                i = 0
+                j = 0
+                if (direction == const.DIR_NORTH 
+                        or direction == const.DIR_SOUTH):
                     i = lr % len(maze_wall[0])
-                    row_wall.append(maze_wall[j][i])
-                    row_door.append(maze_door[j][i])
-                    row_contents.append(maze_contents[j][i])
-                view_wall.append(row_wall)
-                view_door.append(row_door)
-                view_contents.append(row_contents)
+                    j = depth % len(maze_wall)
+                elif (direction == const.DIR_EAST 
+                        or direction == const.DIR_WEST):
+                    i = depth % len(maze_wall[0])
+                    j = lr % len(maze_wall)
+                row_wall.append(maze_wall[j][i])
+                row_door.append(maze_door[j][i])
+                row_contents.append(maze_contents[j][i])
+            view_wall.append(row_wall)
+            view_door.append(row_door)
+            view_contents.append(row_contents)
         # 戻り値
         map_view = [view_wall, view_door, view_contents]
         return map_view

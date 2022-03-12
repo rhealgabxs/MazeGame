@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Pygame動作確認
+プレイヤー
 """
 import sys
 from PIL import Image, ImageDraw

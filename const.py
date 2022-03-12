@@ -25,6 +25,14 @@ DIR_EAST = 1
 DIR_SOUTH = 2
 DIR_WEST = 3
 
+# 方角に対する迷路の内容
+DIC_DIRECTION = {
+    DIR_NORTH : MAZE_NORTH,
+    DIR_EAST : MAZE_EAST,
+    DIR_SOUTH : MAZE_SOUTH,
+    DIR_WEST : MAZE_WEST
+}
+
 # 視界範囲
 VIEW = 5
 

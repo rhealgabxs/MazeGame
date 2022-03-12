@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Pygame動作確認
+迷路ゲーム本体
 """
 import random
 import sys
@@ -13,7 +13,8 @@ import const
 import draw
 import maze
 import player
-import show
+import search_maze
+import show_map
 
 
 class Game():
@@ -37,6 +38,7 @@ class Game():
         print('random.seed = ' + str(seed))
         random.seed(seed)
         self.random_state = [random.getstate()]
+        #self.mz = maze.Maze(100, 100, seed=seed, room=100)
         self.mz = maze.Maze(20, 20, seed=seed)
         self.mz.make_maze()
         self.random_state.append(random.getstate())
@@ -48,7 +50,7 @@ class Game():
         self.pl.y = self.mz.y_up
         self.pl.direction = random.choice(
                 [const.DIR_NORTH, const.DIR_EAST, 
-                const.DIR_SOUTH, const.DIR_WEST])
+                 const.DIR_SOUTH, const.DIR_WEST])
         
         # 3D描画オブジェクト
         self.draw3d = draw.Draw3D()
@@ -56,11 +58,15 @@ class Game():
                 self.mz, self.pl.x, self.pl.y, self.pl.direction)
         
         # 地図描画オブジェクト
-        self.obj_show = show.ShowMap()
+        self.obj_show = show_map.ShowMap()
+        
+        # 迷路探索オブジェクト
+        self.obj_search = search_maze.SearchMaze(self.mz)
         
         # 描画
         self.show_img(img3d)
         
+        # メインループ
         self.root.mainloop()
     
     def show_img(self, args_img):
@@ -72,11 +78,13 @@ class Game():
         self.canvas.create_image(1, 1, anchor=tk.NW, image=self.imgtk)
     
     def key_handler(self, event):
-        """ キー押下処理 """
+        """ キーイベント処理 """
         if event.keysym == 'Escape':
             # ESCキー
             self.root.unbind('<KeyPress>', self.bind_id)
-            res = messagebox.askyesno(title=self.TITLE, message='QUIT ?')
+            res = messagebox.askyesno(
+                    title=self.TITLE, message='QUIT ?',
+                    detail='CURRENT FLOOR IS B' + str(self.pl.floor))
             if res:
                 self.root.destroy()
                 sys.exit()
@@ -90,6 +98,19 @@ class Game():
             self.pl.turn_right()
         elif event.keysym == 'Down':
             self.pl.turn_around()
+        elif event.keysym == 'a':
+            # 地図＋経路表示
+            imgmap = self.obj_show.draw_all(self.mz)
+            self.obj_show.draw_player(
+                    self.pl.x, self.pl.y, self.pl.direction)
+            self.obj_search.initialize(self.mz)
+            self.obj_search.find_route(
+                    start=(self.pl.x, self.pl.y),
+                    end=(self.mz.x_down, self.mz.y_down),
+                    direction_now=self.pl.direction)
+            self.obj_show.draw_route(self.obj_search)
+            self.show_img(imgmap)
+            return
         elif event.keysym == 'm':
             # 地図表示
             imgmap = self.obj_show.draw_all(self.mz)
@@ -121,7 +142,6 @@ class Game():
                         # 迷路作成
                         stat = self.random_state[self.pl.floor - 1]
                         self.mz.next_maze(random_state=stat)
-                        #self.mz.set_down_xy(self.pl.x, self.pl.y)
                 self.bind_id = self.root.bind('<KeyPress>', self.key_handler)
         elif event.keysym == 'Next':
             # PageDownキー
@@ -138,7 +158,7 @@ class Game():
                     # 迷路作成
                     stat = self.random_state[self.pl.floor - 1]
                     self.mz.next_maze(random_state=stat)
-                    self.mz.set_up_xy(self.pl.x, self.pl.y)
+                    self.mz.set_xy_up(self.pl.x, self.pl.y)
                     if len(self.random_state) <= self.pl.floor:
                         self.random_state.append(random.getstate())
                 self.bind_id = self.root.bind('<KeyPress>', self.key_handler)
@@ -151,6 +171,6 @@ class Game():
 
 
 if __name__ == "__main__":
-    # 処理開始
+    # 開始
     gm = Game()
     

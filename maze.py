@@ -257,13 +257,13 @@ class Maze():
         # 上り階段をセット
         x = random.randrange(self.width)
         y = random.randrange(self.height)
-        self.set_up_xy(x, y)
+        self.set_xy_up(x, y)
         # 下り階段をセット
         x = random.randrange(self.width)
         y = random.randrange(self.height)
-        self.set_down_xy(x, y)
+        self.set_xy_down(x, y)
     
-    def set_up_xy(self, x, y):
+    def set_xy_up(self, x, y):
         """ 上り階段の設定 """
         # 削除
         self.maze_contents[self.y_up][self.x_up] &= ~const.EVENT_CEILING
@@ -272,7 +272,7 @@ class Maze():
         self.x_up = x
         self.y_up = y
     
-    def set_down_xy(self, x, y):
+    def set_xy_down(self, x, y):
         """ 下り階段の設定 """
         # 削除
         self.maze_contents[self.y_down][self.x_down] &= ~const.EVENT_FLOOR
@@ -327,15 +327,11 @@ class Maze():
                     map_row2 += ' '
             # 右端の壁
             map_row1 += '#'
-            #map_row2 += '#'
             map_row2 += str(iy % 10)
             print(map_row1)
             print(map_row2)
             if iy == 0:
                 map_bottom = map_row1
         # 最下部の壁
-        #map_row3 = ''.ljust(self.width * 2 + 1, '#')
-        #map_print.append(map_row3)
-        #print(map_row3)
         map_print.append(map_bottom)
         print(map_bottom)
