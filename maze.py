@@ -21,9 +21,13 @@ class Maze():
     # 上り階段の位置
     x_up = 0
     y_up = 0
+    stairs_up = []
     # 下り階段の位置
     x_down = 0
     y_down = 0
+    stairs_down = []
+    # 乱数の状態（各階毎）
+    random_state = []
     
     def __init__(self, width, height, seed=None, room=None):
         """ コンストラクタ """
@@ -33,6 +37,7 @@ class Maze():
         self.height = height
         # 乱数のシード設定
         random.seed(seed)
+        self.random_state.append(random.getstate())
         # 部屋の出現確率（0-100）
         #   ※実際には設置できないことがあるので、設定数値より少ない
         self.room_init = room
@@ -42,15 +47,41 @@ class Maze():
         """ 迷路作成 """
         self.initialize()
         self.dig()
-        self.finalize()
+        self.make_stairs_up()
+        self.make_stairs_down()
+        self.random_state.append(random.getstate())
     
-    def next_maze(self, random_state=None):
+    def next_maze(self, floor=None, randstate=None):
         """ 次の迷路を作成 """
+        # 階層を指定しない場合は未到達階
+        if floor is None:
+            floor = 0
         # 乱数の状態を戻す
-        #   random.getstate()で取得した値を設定
-        if random_state:
-            random.setstate(random_state)
-        self.make_maze()
+        if randstate:
+            random.setstate(randstate)
+        else:
+            random.setstate(self.random_state[floor - 1])
+        # 迷路を作成
+        if floor == 0 or floor == len(self.random_state):
+            # 未到達階の場合
+            self.make_maze()
+        else:
+            self.initialize()
+            self.dig()
+            self.set_stairs_by_floor(floor)
+    
+    def back_maze(self, floor, randstate=None):
+        """ 前の迷路を作成 """
+        # 乱数の状態を戻す
+        if randstate:
+            random.setstate(randstate)
+        else:
+            random.setstate(self.random_state[floor - 1])
+        # 迷路を再作成
+        self.initialize()
+        self.dig()
+        # 階段の位置を戻す
+        self.set_stairs_by_floor(floor)
     
     def initialize(self):
         """ 前処理 """
@@ -252,18 +283,21 @@ class Maze():
             self.maze_door[y][x] |= const.MAZE_WEST
             self.maze_door[y][x - 1] |= const.MAZE_EAST
     
-    def finalize(self):
-        """ 後処理 """
-        # 上り階段をセット
+    def make_stairs_up(self):
+        """ 上り階段を作成 """
         x = random.randrange(self.width)
         y = random.randrange(self.height)
+        self.stairs_up.append([x, y])
         self.set_xy_up(x, y)
-        # 下り階段をセット
+    
+    def make_stairs_down(self):
+        """ 下り階段を作成 """
         x = random.randrange(self.width)
         y = random.randrange(self.height)
+        self.stairs_down.append([x, y])
         self.set_xy_down(x, y)
     
-    def set_xy_up(self, x, y):
+    def set_xy_up(self, x, y, floor=None):
         """ 上り階段の設定 """
         # 削除
         self.maze_contents[self.y_up][self.x_up] &= ~const.EVENT_CEILING
@@ -271,8 +305,10 @@ class Maze():
         self.maze_contents[y][x] |= const.EVENT_CEILING
         self.x_up = x
         self.y_up = y
+        if floor:
+            self.stairs_up[floor - 1] = [x, y]
     
-    def set_xy_down(self, x, y):
+    def set_xy_down(self, x, y, floor=None):
         """ 下り階段の設定 """
         # 削除
         self.maze_contents[self.y_down][self.x_down] &= ~const.EVENT_FLOOR
@@ -280,6 +316,17 @@ class Maze():
         self.maze_contents[y][x] |= const.EVENT_FLOOR
         self.x_down = x
         self.y_down = y
+        if floor:
+            self.stairs_down[floor - 1] = [x, y]
+    
+    def set_stairs_by_floor(self, floor):
+        """ 指定階層の階段位置を設定 """
+        # 上り階段
+        x, y = self.stairs_up[floor - 1]
+        self.set_xy_up(x, y)
+        # 下り階段
+        x, y = self.stairs_down[floor - 1]
+        self.set_xy_down(x, y)
     
     def print_maze(self):
         """ 迷路を表示 """

@@ -30,18 +30,16 @@ class Game():
         self.root.title(self.TITLE)
         self.root.geometry(str(const.WIN_W) + 'x' + str(const.WIN_H))
         self.root.configure(bg='black')
-        self.bind_id = self.root.bind('<KeyPress>', self.key_handler)
+        self.bind_id = self.root.bind('<KeyPress>', self.key_press)
+        self.time_key = 0
         
         # 迷路作成
         seed = time.time_ns() % (10 ** 9)
         #seed = 123
         print('random.seed = ' + str(seed))
-        random.seed(seed)
-        self.random_state = [random.getstate()]
         #self.mz = maze.Maze(100, 100, seed=seed, room=100)
         self.mz = maze.Maze(20, 20, seed=seed)
         self.mz.make_maze()
-        self.random_state.append(random.getstate())
         
         # プレイヤー作成
         self.pl = player.Player('Player')
@@ -59,6 +57,7 @@ class Game():
         
         # 地図描画オブジェクト
         self.obj_show = show_map.ShowMap()
+        self.flag_show_map = False
         
         # 迷路探索オブジェクト
         self.obj_search = search_maze.SearchMaze(self.mz)
@@ -66,7 +65,7 @@ class Game():
         # 描画
         self.show_img(img3d)
         
-        # メインループ
+        # ウィンドウイベントループ
         self.root.mainloop()
     
     def show_img(self, args_img):
@@ -77,18 +76,25 @@ class Game():
         self.canvas.place(x=self.margin, y=self.margin)
         self.canvas.create_image(1, 1, anchor=tk.NW, image=self.imgtk)
     
-    def key_handler(self, event):
-        """ キーイベント処理 """
-        if event.keysym == 'Escape':
+    def key_press(self, event):
+        """ キー押下イベント処理 """
+        # キーリピート対策（100 = 0.1sec）
+        if event.time - self.time_key < 100:
+            return
+        self.time_key = event.time
+        self.root.unbind('<KeyPress>', self.bind_id)
+        # 地図表示中ならば地図を閉じる
+        if self.flag_show_map:
+            self.flag_show_map = False
+        elif event.keysym == 'Escape':
             # ESCキー
-            self.root.unbind('<KeyPress>', self.bind_id)
             res = messagebox.askyesno(
                     title=self.TITLE, message='QUIT ?',
                     detail='CURRENT FLOOR IS B' + str(self.pl.floor))
             if res:
+                # 終了
                 self.root.destroy()
                 sys.exit()
-            self.bind_id = self.root.bind('<KeyPress>', self.key_handler)
         elif event.keysym == 'Up':
             cell_wall = self.mz.maze_wall[self.pl.y][self.pl.x]
             self.pl.move_forward(cell_wall)
@@ -98,32 +104,23 @@ class Game():
             self.pl.turn_right()
         elif event.keysym == 'Down':
             self.pl.turn_around()
-        elif event.keysym == 'a':
-            # 地図＋経路表示
-            imgmap = self.obj_show.draw_all(self.mz)
-            self.obj_show.draw_player(
-                    self.pl.x, self.pl.y, self.pl.direction)
-            self.obj_search.initialize(self.mz)
-            self.obj_search.find_route(
-                    start=(self.pl.x, self.pl.y),
-                    end=(self.mz.x_down, self.mz.y_down),
-                    direction_now=self.pl.direction)
-            self.obj_show.draw_route(self.obj_search)
-            self.show_img(imgmap)
+        elif event.keysym == 'h':
+            # 地図 + 上階段までの経路表示
+            self.show_guide(event.keysym)
+            return
+        elif event.keysym == 'l':
+            # 地図 + 下階段までの経路表示
+            self.show_guide(event.keysym)
             return
         elif event.keysym == 'm':
             # 地図表示
-            imgmap = self.obj_show.draw_all(self.mz)
-            self.obj_show.draw_player(
-                    self.pl.x, self.pl.y, self.pl.direction)
-            self.show_img(imgmap)
+            self.show_guide(event.keysym)
             return
         elif event.keysym == 'Prior':
             # PageUpキー
             # 上の階段判定
             cell = self.mz.maze_contents[self.pl.y][self.pl.x]
             if cell & const.EVENT_CEILING != const.MAZE_NONE:
-                self.root.unbind('<KeyPress>', self.bind_id)
                 res = messagebox.askyesno(
                         title=self.TITLE, message='MOVE UP ?', 
                         detail='CURRENT FLOOR IS B' + str(self.pl.floor))
@@ -140,15 +137,12 @@ class Game():
                         # 上に移動
                         self.pl.floor -= 1
                         # 迷路作成
-                        stat = self.random_state[self.pl.floor - 1]
-                        self.mz.next_maze(random_state=stat)
-                self.bind_id = self.root.bind('<KeyPress>', self.key_handler)
+                        self.mz.back_maze(self.pl.floor)
         elif event.keysym == 'Next':
             # PageDownキー
             # 下の階段判定
             cell = self.mz.maze_contents[self.pl.y][self.pl.x]
             if cell & const.EVENT_FLOOR != const.MAZE_NONE:
-                self.root.unbind('<KeyPress>', self.bind_id)
                 res = messagebox.askyesno(
                         title=self.TITLE, message='MOVE DOWN ?', 
                         detail='CURRENT FLOOR IS B' + str(self.pl.floor))
@@ -156,18 +150,35 @@ class Game():
                     # 下に移動
                     self.pl.floor += 1
                     # 迷路作成
-                    stat = self.random_state[self.pl.floor - 1]
-                    self.mz.next_maze(random_state=stat)
-                    self.mz.set_xy_up(self.pl.x, self.pl.y)
-                    if len(self.random_state) <= self.pl.floor:
-                        self.random_state.append(random.getstate())
-                self.bind_id = self.root.bind('<KeyPress>', self.key_handler)
+                    self.mz.next_maze(floor=self.pl.floor)
+                    self.mz.set_xy_up(
+                            self.pl.x, self.pl.y, floor=self.pl.floor)
         else:
             pass
         # 3D描画
         img3d = self.draw3d.draw(
                 self.mz, self.pl.x, self.pl.y, self.pl.direction)
         self.show_img(img3d)
+        self.bind_id = self.root.bind('<KeyPress>', self.key_press)
+    
+    def show_guide(self, keysymbol):
+        """ 地図、経路表示 """
+        self.flag_show_map = True
+        imgmap = self.obj_show.draw_all(self.mz)
+        self.obj_show.draw_player(
+                self.pl.x, self.pl.y, self.pl.direction)
+        if keysymbol == 'h' or keysymbol == 'l':
+            self.obj_search.initialize(self.mz)
+            xy_end = (self.mz.x_up, self.mz.y_up)
+            if keysymbol == 'l':
+                xy_end = (self.mz.x_down, self.mz.y_down)
+            self.obj_search.find_route(
+                    start=(self.pl.x, self.pl.y),
+                    end=xy_end,
+                    direction_now=self.pl.direction)
+            self.obj_show.draw_route(self.obj_search)
+        self.show_img(imgmap)
+        self.bind_id = self.root.bind('<KeyPress>', self.key_press)
 
 
 if __name__ == "__main__":
