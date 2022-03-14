@@ -37,6 +37,7 @@ python3 game.py
   - 赤の三角：プレイヤーの現在地
   - 緑マーク：上の階段
   - 青マーク：下の階段
+
 ![Map](Screenshot_Map.png)
 
 ## 改造
@@ -53,6 +54,7 @@ self.mz = maze.Maze(20, 20, seed=seed)
 - room引数：部屋の発生確率（0-100）
   0だと部屋なしの迷路、100だと部屋だらけの迷路になります。  
   ただし100だからといって迷路全てが部屋になるわけではありません。  
+
 ![No Room](Screenshot_100x100_NoRoom.png)
 ![Many Room](Screenshot_100x100_ManyRoom.png)
 
