@@ -18,8 +18,8 @@ class ShowMap():
         """ コンストラクタ """
         pass
     
-    def draw_all(self, obj_maze):
-        """ 地図全体を描画 """
+    def draw_map(self, obj_maze, player=None):
+        """ 地図を描画 """
         img = Image.new('RGB', (const.WIDTH, const.HEIGHT), color=0)
         self.draw = ImageDraw.Draw(img)
         # 壁の色
@@ -32,6 +32,8 @@ class ShowMap():
         COLOR_CEILING = (0, 255, 0)
         # イベント床の色
         COLOR_FLOOR = (0, 0, 255)
+        # 未到達の色
+        COLOR_UNKNOWN = (127, 127, 127)
         # 枠の描画
         self.draw.rectangle(
                 (0, 0) + (const.WIDTH - 1, const.HEIGHT - 1), 
@@ -48,6 +50,17 @@ class ShowMap():
         ev = self.size * 0.8 / 2
         for iy, row_wall in enumerate(maze_wall):
             for ix, cell_wall in enumerate(row_wall):
+                # 通った道のみ表示（Noneの場合、全体表示）
+                if player is not None:
+                    step = player.mapping[player.floor - 1][iy][ix]
+                    if step == False:
+                        xy = (self.size * ix, self.size * iy) \
+                                + (self.size * (ix + 1), self.size * (iy + 1))
+                        self.draw.rectangle(
+                                xy, 
+                                fill=COLOR_UNKNOWN, 
+                                outline=COLOR_UNKNOWN)
+                        continue
                 # 各セルの中心座標
                 x = self.size * (ix + 0.5)
                 y = self.size * (iy + 0.5)

@@ -31,7 +31,12 @@ class Game():
         self.root.geometry(str(const.WIN_W) + 'x' + str(const.WIN_H))
         self.root.configure(bg='black')
         self.bind_id = self.root.bind('<KeyPress>', self.key_press)
+        self.root.bind('<KeyPress-Shift_L>', self.key_press_shift)
+        self.root.bind('<KeyPress-Shift_R>', self.key_press_shift)
+        self.root.bind('<KeyRelease-Shift_L>', self.key_release_shift)
+        self.root.bind('<KeyRelease-Shift_R>', self.key_release_shift)
         self.time_key = 0
+        self.key_shift = False
         
         # 迷路作成
         seed = time.time_ns() % (10 ** 9)
@@ -42,13 +47,15 @@ class Game():
         self.mz.make_maze()
         
         # プレイヤー作成
-        self.pl = player.Player('Player')
+        self.pl = player.Player('Player', self.mz)
         # スタート位置決定
         self.pl.x = self.mz.x_up
         self.pl.y = self.mz.y_up
         self.pl.direction = random.choice(
                 [const.DIR_NORTH, const.DIR_EAST, 
                  const.DIR_SOUTH, const.DIR_WEST])
+        # オートマッピング
+        self.pl.auto_mapping()
         
         # 3D描画オブジェクト
         self.draw3d = draw.Draw3D()
@@ -81,13 +88,12 @@ class Game():
         # キーリピート対策（100 = 0.1sec）
         if event.time - self.time_key < 100:
             return
-        self.time_key = event.time
         self.root.unbind('<KeyPress>', self.bind_id)
-        # 地図表示中ならば地図を閉じる
+        self.time_key = event.time
         if self.flag_show_map:
+            # 地図表示中ならば地図を閉じる
             self.flag_show_map = False
         elif event.keysym == 'Escape':
-            # ESCキー
             res = messagebox.askyesno(
                     title=self.TITLE, message='QUIT ?',
                     detail='CURRENT FLOOR IS B' + str(self.pl.floor))
@@ -104,18 +110,6 @@ class Game():
             self.pl.turn_right()
         elif event.keysym == 'Down':
             self.pl.turn_around()
-        elif event.keysym == 'h':
-            # 地図 + 上階段までの経路表示
-            self.show_guide(event.keysym)
-            return
-        elif event.keysym == 'l':
-            # 地図 + 下階段までの経路表示
-            self.show_guide(event.keysym)
-            return
-        elif event.keysym == 'm':
-            # 地図表示
-            self.show_guide(event.keysym)
-            return
         elif event.keysym == 'Prior':
             # PageUpキー
             # 上の階段判定
@@ -153,24 +147,48 @@ class Game():
                     self.mz.next_maze(floor=self.pl.floor)
                     self.mz.set_xy_up(
                             self.pl.x, self.pl.y, floor=self.pl.floor)
-        else:
-            pass
+        elif (event.keysym.upper() == 'M'
+                or event.keysym.upper() == 'H'
+                or event.keysym.upper() == 'L'
+                ):
+            # 地図表示
+            self.show_guide(event.keysym.upper())
+            return
+        # オートマッピング
+        self.pl.auto_mapping()
         # 3D描画
         img3d = self.draw3d.draw(
                 self.mz, self.pl.x, self.pl.y, self.pl.direction)
         self.show_img(img3d)
         self.bind_id = self.root.bind('<KeyPress>', self.key_press)
     
-    def show_guide(self, keysymbol):
-        """ 地図、経路表示 """
+    def key_press_shift(self, event):
+        """ Shiftキーが押されたとき """
+        self.key_shift = True
+    
+    def key_release_shift(self, event):
+        """ Shiftキーが離されたとき """
+        self.key_shift = False
+    
+    def show_guide(self, keysymbol, player=None):
+        """
+        地図、経路表示
+            'M' : 地図表示（通った道のみ）
+            Shift + 'M' : 地図表示（全体）
+            Shift + 'H' : 地図 + 上階段までの経路表示
+            Shift + 'L' : 地図 + 下階段までの経路表示
+        """
         self.flag_show_map = True
-        imgmap = self.obj_show.draw_all(self.mz)
+        if self.key_shift:
+            imgmap = self.obj_show.draw_map(self.mz)
+        else:
+            imgmap = self.obj_show.draw_map(self.mz, player=self.pl)
         self.obj_show.draw_player(
                 self.pl.x, self.pl.y, self.pl.direction)
-        if keysymbol == 'h' or keysymbol == 'l':
+        if keysymbol == 'H' or keysymbol == 'L':
             self.obj_search.initialize(self.mz)
             xy_end = (self.mz.x_up, self.mz.y_up)
-            if keysymbol == 'l':
+            if keysymbol == 'L':
                 xy_end = (self.mz.x_down, self.mz.y_down)
             self.obj_search.find_route(
                     start=(self.pl.x, self.pl.y),
