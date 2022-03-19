@@ -1,6 +1,5 @@
 # MazeGame
 ウィザードリィ風のワイヤーフレーム表示の迷路探索ゲーム  
-暇つぶしにでもどうぞ  
 ![Maze3D](Screenshot_3D.png)
 
 ## 機能
@@ -9,11 +8,10 @@
 
 ## 必要要件
 下記の環境で動かしました。  
-
 - Debian 11 stable
-- Python 3.9.2
-- Tkinter 3.9.2
-- Pillow 8.1.2
+- Python 3.9
+- Tkinter 3.9
+- Pillow 8.1
 
 ## 起動方法
 ```
@@ -28,9 +26,10 @@ python3 game.py
 - 下キー：振り向く
 - PageUpキー：階段を上る
 - PageDownキー：階段を下る
-- Hキー：地図表示（上階段までの経路付き）
-- Lキー：地図表示（下階段までの経路付き）
-- Mキー：地図表示
+- Shift + Hキー：地図表示（上階段までの経路付き）
+- Shift + Lキー：地図表示（下階段までの経路付き）
+- Shift + Mキー：地図表示（全体）
+- Mキー：地図表示（通った道のみ）
   - 白の線：壁
   - オレンジの線：扉
   - 赤紫色の線：経路
@@ -41,13 +40,11 @@ python3 game.py
 ![Map](Screenshot_Map.png)
 
 ## 改造
-game.pyの40行目付近のパラメータを変えると色々な迷路が作成できます。  
+game.pyの46行目付近のパラメータを変えると色々な迷路が作成できます。  
 迷路を大きくすると地図表示しながらでも探索が大変になると思います。  
-
 ```
 self.mz = maze.Maze(20, 20, seed=seed)  
 ```
-
 - 第1引数：迷路の横幅
 - 第2引数：迷路の縦幅
 - seed引数：乱数のシード値
@@ -55,7 +52,16 @@ self.mz = maze.Maze(20, 20, seed=seed)
   0だと部屋なしの迷路、100だと部屋だらけの迷路になります。  
   ただし100だからといって迷路全てが部屋になるわけではありません。  
 
+### 部屋なし
+```
+self.mz = maze.Maze(100, 100, seed=seed, room=0)  
+```
 ![No Room](Screenshot_100x100_NoRoom.png)
+
+### 部屋たくさん
+```
+self.mz = maze.Maze(100, 100, seed=seed, room=100)  
+```
 ![Many Room](Screenshot_100x100_ManyRoom.png)
 
 ## その他
