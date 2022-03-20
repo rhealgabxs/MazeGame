@@ -40,7 +40,7 @@ python3 game.py
 ![Map](Screenshot_Map.png)
 
 ## 改造
-game.pyの46行目付近のパラメータを変えると色々な迷路が作成できます。  
+game.pyの迷路オブジェクトのパラメータを変えると色々な迷路が作成できます。  
 迷路を大きくすると地図表示しながらでも探索が大変になると思います。  
 ```
 self.mz = maze.Maze(20, 20, seed=seed)  
