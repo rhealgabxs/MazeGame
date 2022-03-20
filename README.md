@@ -43,7 +43,7 @@ python3 game.py
 game.pyの迷路オブジェクトのパラメータを変えると色々な迷路が作成できます。  
 迷路を大きくすると地図表示しながらでも探索が大変になると思います。  
 ```
-self.mz = maze.Maze(20, 20, seed=seed)  
+self.mz = maze.Maze(20, 20, seed=self.seed)  
 ```
 - 第1引数：迷路の横幅
 - 第2引数：迷路の縦幅
@@ -54,13 +54,13 @@ self.mz = maze.Maze(20, 20, seed=seed)
 
 ### 部屋なし
 ```
-self.mz = maze.Maze(100, 100, seed=seed, room=0)  
+self.mz = maze.Maze(100, 100, seed=self.seed, room=0)  
 ```
 ![No Room](Screenshot_100x100_NoRoom.png)
 
 ### 部屋たくさん
 ```
-self.mz = maze.Maze(100, 100, seed=seed, room=100)  
+self.mz = maze.Maze(100, 100, seed=self.seed, room=100)  
 ```
 ![Many Room](Screenshot_100x100_ManyRoom.png)
 
