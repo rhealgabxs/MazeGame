@@ -88,7 +88,7 @@ class Maze():
         # 部屋の出現確率を設定
         if self.room_init is None:
             room = random.randrange(101)
-            print('room_chance = ' + str(room))
+            #print('room_chance = ' + str(room))
             self.room_chance = room
         # 壁で埋める
         self.maze_wall = []
