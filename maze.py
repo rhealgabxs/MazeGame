@@ -28,6 +28,10 @@ class Maze():
     stairs_down = []
     # 乱数の状態（各階毎）
     random_state = []
+    # 迷路の横の大きさ
+    width = 0
+    # 迷路の縦の大きさ
+    height = 0
     
     def __init__(self, width, height, seed=None, room=None):
         """ コンストラクタ """

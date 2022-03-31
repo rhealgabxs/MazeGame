@@ -13,6 +13,7 @@ import const
 import draw
 import maze
 import player
+import save_data
 import search_maze
 import show_map
 
@@ -48,7 +49,7 @@ class Game():
         self.time_key = 0
         self.key_shift = False
         
-        # キーカウンタの初期化
+        # キー回数の初期化
         self.count_key['key'] = 0
         # 歩数
         self.count_key['steps'] = 0
@@ -241,6 +242,7 @@ class Game():
     
     def show_guide(self, guide_type=GUIDE_ONLY_ROUTE):
         """ 地図、経路表示 """
+        self.root.unbind('<KeyPress>', self.bind_id)
         # 地図表示
         if guide_type == self.GUIDE_ONLY_ROUTE:
             # 通った道のみ
@@ -275,13 +277,134 @@ class Game():
     
     def state_save(self):
         """ セーブ """
+        # 確認
+        if not self.msgbox_yn('SAVE ?'):
+            return
         self.count_key['save'] += 1
-        return
+        # セーブデータ接続
+        obj_save = save_data.SaveData()
+        # プレイヤー情報
+        list_pl = [self.pl.name , self.seed , self.pl.floor
+                , self.pl.x , self.pl.y , self.pl.direction
+                ]
+        obj_save.save_player(list_pl)
+        # キー回数
+        list_count = [self.count_key['key'], self.count_key['steps']
+                , self.count_key['mapping'], self.count_key['map_all']
+                , self.count_key['guide_up'], self.count_key['guide_down']
+                , self.count_key['save'], self.count_key['load']
+                ]
+        obj_save.save_count_key(list_count)
+        # 迷路関連
+        # 分解してセーブデータ用に変換
+        list_maze = []
+        size_x = len(self.pl.mapping[0][0])
+        size_y = len(self.pl.mapping[0])
+        for i, map_floor in enumerate(self.pl.mapping):
+            floor = i + 1
+            mapping_data = ''
+            for row in map_floor:
+                for cell in row:
+                    if cell:
+                        mapping_data += '1'
+                    else:
+                        mapping_data += '0'
+            stairs_up_x, stairs_up_y = self.mz.stairs_up[i]
+            stairs_down_x, stairs_down_y = self.mz.stairs_down[i]
+            list_maze.append([floor, size_x, size_y, mapping_data
+                    , stairs_up_x, stairs_up_y
+                    , stairs_down_x, stairs_down_y
+                    ])
+        obj_save.save_maze(list_maze)
+        # 乱数状態
+        list_random_state = []
+        for i, randstate in enumerate(self.mz.random_state):
+            floor = i + 1
+            version = randstate[0]
+            internalstate = b''
+            for val in randstate[1]:
+                internalstate += val.to_bytes(4, 'little')
+            gauss_next = randstate[2]
+            list_random_state.append(
+                    [floor, version, internalstate, gauss_next])
+        obj_save.save_random_state(list_random_state)
+        # セーブデータ接続終了
+        obj_save.close_db()
     
     def state_load(self):
         """ ロード """
-        self.count_key['load'] += 1
-        return
+        # 確認
+        if not self.msgbox_yn('LOAD ?'):
+            return
+        # セーブデータ接続
+        obj_save = save_data.SaveData()
+        # データ読み込み
+        row_pl = obj_save.load_player()
+        row_count = obj_save.load_count_key()
+        rows_maze = obj_save.load_maze(self.mz.width, self.mz.height)
+        rows_randstate = obj_save.load_random_state()
+        # セーブデータ接続終了
+        obj_save.close_db()
+        # 迷路関連（セーブデータの有無を調べるため最初にロード）
+        if rows_maze is None or len(rows_maze) == 0:
+            # セーブデータなし
+            self.root.unbind('<KeyPress>', self.bind_id)
+            messagebox.showinfo(title=self.TITLE, message='NO SAVE DATA')
+            self.bind_id = self.root.bind('<KeyPress>', self.key_press)
+            return
+        self.pl.mapping = []
+        self.mz.stairs_up = []
+        self.mz.stairs_down = []
+        for row in rows_maze:
+            # オートマッピング
+            map_floor = []
+            for y in range(self.mz.height):
+                map_row = []
+                for x in range(self.mz.width):
+                    cell = row['mapping'][y * self.mz.height + x]
+                    if cell == '1':
+                        map_row.append(True)
+                    else:
+                        map_row.append(False)
+                map_floor.append(map_row)
+            self.pl.mapping.append(map_floor)
+            # 上り階段
+            self.mz.stairs_up.append(
+                    [row['stairs_up_x'], row['stairs_up_y']])
+            # 下り階段
+            self.mz.stairs_down.append(
+                    [row['stairs_down_x'], row['stairs_down_y']])
+        # プレイヤー情報
+        self.pl.name = row_pl['name']
+        self.seed = row_pl['seed']
+        self.pl.floor = row_pl['floor']
+        self.pl.x = row_pl['x']
+        self.pl.y = row_pl['y']
+        self.pl.direction = row_pl['direction']
+        # キー回数
+        self.count_key['key'] = row_count['key']
+        self.count_key['steps'] = row_count['steps']
+        self.count_key['mapping'] = row_count['mapping']
+        self.count_key['map_all'] = row_count['map_all']
+        self.count_key['guide_up'] = row_count['guide_up']
+        self.count_key['guide_down'] = row_count['guide_down']
+        self.count_key['save'] = row_count['save']
+        # ロード回数はカウント
+        self.count_key['load'] = row_count['load'] + 1
+        # 乱数状態
+        self.mz.random_state = []
+        for row in rows_randstate:
+            version = row['version']
+            data = row['internalstate']
+            internalstate = []
+            for i in range(0, len(data), 4):
+                val = int.from_bytes(data[i:i+4], 'little')
+                internalstate.append(val)
+            gauss_next = row['gauss_next']
+            self.mz.random_state.append(
+                    (version, tuple(internalstate), gauss_next))
+        # 迷路再作成
+        self.mz.back_maze(self.pl.floor)
 
 
 if __name__ == "__main__":

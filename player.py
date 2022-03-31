@@ -11,9 +11,9 @@ import const
 class Player:
     """ プレイヤークラス """
     name = ''
+    floor = 1
     x = 0
     y = 0
-    floor = 1
     direction = const.DIR_SOUTH
     
     # オートマッピング用（階層ごとに配列で用意）
