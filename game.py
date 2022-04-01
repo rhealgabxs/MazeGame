@@ -2,7 +2,9 @@
 """
 迷路ゲーム本体
 """
+import os
 import random
+import shutil
 import sys
 import time
 import tkinter as tk
@@ -280,27 +282,43 @@ class Game():
         # 確認
         if not self.msgbox_yn('SAVE ?'):
             return
+        self.root.unbind('<KeyPress>', self.bind_id)
         self.count_key['save'] += 1
+        # バックアップ作成
+        src_file = save_data.DB_FILE
+        if os.path.exists(src_file):
+            filename_split = src_file.rsplit('.', 1)
+            dst_file = filename_split[0] + '_bak.' + filename_split[1]
+            shutil.copy2(src_file, dst_file)
         # セーブデータ接続
         obj_save = save_data.SaveData()
         # プレイヤー情報
-        list_pl = [self.pl.name , self.seed , self.pl.floor
-                , self.pl.x , self.pl.y , self.pl.direction
-                ]
-        obj_save.save_player(list_pl)
+        dic_pl = {}
+        dic_pl['name'] = self.pl.name
+        dic_pl['seed'] = self.seed
+        dic_pl['floor'] = self.pl.floor
+        dic_pl['x'] = self.pl.x
+        dic_pl['y'] = self.pl.y
+        dic_pl['direction'] = self.pl.direction
+        obj_save.save_player(dic_pl)
         # キー回数
-        list_count = [self.count_key['key'], self.count_key['steps']
-                , self.count_key['mapping'], self.count_key['map_all']
-                , self.count_key['guide_up'], self.count_key['guide_down']
-                , self.count_key['save'], self.count_key['load']
-                ]
-        obj_save.save_count_key(list_count)
+        dic_count = {}
+        dic_count['key'] = self.count_key['key']
+        dic_count['steps'] = self.count_key['steps']
+        dic_count['mapping'] = self.count_key['mapping']
+        dic_count['map_all'] = self.count_key['map_all']
+        dic_count['guide_up'] = self.count_key['guide_up']
+        dic_count['guide_down'] = self.count_key['guide_down']
+        dic_count['save'] = self.count_key['save']
+        dic_count['load'] = self.count_key['load']
+        obj_save.save_count_key(dic_count)
         # 迷路関連
         # 分解してセーブデータ用に変換
         list_maze = []
         size_x = len(self.pl.mapping[0][0])
         size_y = len(self.pl.mapping[0])
         for i, map_floor in enumerate(self.pl.mapping):
+            dic = {}
             floor = i + 1
             mapping_data = ''
             for row in map_floor:
@@ -311,31 +329,42 @@ class Game():
                         mapping_data += '0'
             stairs_up_x, stairs_up_y = self.mz.stairs_up[i]
             stairs_down_x, stairs_down_y = self.mz.stairs_down[i]
-            list_maze.append([floor, size_x, size_y, mapping_data
-                    , stairs_up_x, stairs_up_y
-                    , stairs_down_x, stairs_down_y
-                    ])
+            dic['floor'] = floor
+            dic['size_x'] = size_x
+            dic['size_y'] = size_y
+            dic['mapping'] = mapping_data
+            dic['stairs_up_x'] = stairs_up_x
+            dic['stairs_up_y'] = stairs_up_y
+            dic['stairs_down_x'] = stairs_down_x
+            dic['stairs_down_y'] = stairs_down_y
+            list_maze.append(dic)
         obj_save.save_maze(list_maze)
         # 乱数状態
         list_random_state = []
         for i, randstate in enumerate(self.mz.random_state):
+            dic = {}
             floor = i + 1
             version = randstate[0]
             internalstate = b''
             for val in randstate[1]:
                 internalstate += val.to_bytes(4, 'little')
             gauss_next = randstate[2]
-            list_random_state.append(
-                    [floor, version, internalstate, gauss_next])
+            dic['floor'] = floor
+            dic['version'] = version
+            dic['internalstate'] = internalstate
+            dic['gauss_next'] = gauss_next
+            list_random_state.append(dic)
         obj_save.save_random_state(list_random_state)
         # セーブデータ接続終了
         obj_save.close_db()
+        self.bind_id = self.root.bind('<KeyPress>', self.key_press)
     
     def state_load(self):
         """ ロード """
         # 確認
         if not self.msgbox_yn('LOAD ?'):
             return
+        self.root.unbind('<KeyPress>', self.bind_id)
         # セーブデータ接続
         obj_save = save_data.SaveData()
         # データ読み込み
@@ -348,7 +377,6 @@ class Game():
         # 迷路関連（セーブデータの有無を調べるため最初にロード）
         if rows_maze is None or len(rows_maze) == 0:
             # セーブデータなし
-            self.root.unbind('<KeyPress>', self.bind_id)
             messagebox.showinfo(title=self.TITLE, message='NO SAVE DATA')
             self.bind_id = self.root.bind('<KeyPress>', self.key_press)
             return
@@ -405,6 +433,7 @@ class Game():
                     (version, tuple(internalstate), gauss_next))
         # 迷路再作成
         self.mz.back_maze(self.pl.floor)
+        self.bind_id = self.root.bind('<KeyPress>', self.key_press)
 
 
 if __name__ == "__main__":
