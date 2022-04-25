@@ -26,8 +26,8 @@ class Maze():
     x_down = 0
     y_down = 0
     stairs_down = []
-    # 乱数の状態（各階毎）
-    random_state = []
+    # 乱数のシード値
+    randseed = None
     # 迷路の横の大きさ
     width = 0
     # 迷路の縦の大きさ
@@ -40,8 +40,8 @@ class Maze():
         # 迷路の縦の大きさ
         self.height = height
         # 乱数のシード設定
+        self.randseed = seed
         random.seed(seed)
-        self.random_state.append(random.getstate())
         # 部屋の出現確率（0-100）
         #   ※実際には設置できないことがあるので、設定数値より少ない
         self.room_init = room
@@ -53,20 +53,17 @@ class Maze():
         self.dig()
         self.make_stairs_up()
         self.make_stairs_down()
-        self.random_state.append(random.getstate())
     
-    def next_maze(self, floor=None, randstate=None):
+    def next_maze(self, floor=None):
         """ 次の迷路を作成 """
         # 階層を指定しない場合は未到達階
         if floor is None:
-            floor = 0
-        # 乱数の状態を戻す
-        if randstate:
-            random.setstate(randstate)
-        else:
-            random.setstate(self.random_state[floor - 1])
+            floor = len(self.stairs_down) + 1
+        # 乱数のシード設定
+        seed = self.randseed + floor - 1
+        random.seed(seed)
         # 迷路を作成
-        if floor == 0 or floor == len(self.random_state):
+        if floor >= len(self.stairs_down):
             # 未到達階の場合
             self.make_maze()
         else:
@@ -74,13 +71,11 @@ class Maze():
             self.dig()
             self.set_stairs_by_floor(floor)
     
-    def back_maze(self, floor, randstate=None):
+    def back_maze(self, floor):
         """ 前の迷路を作成 """
-        # 乱数の状態を戻す
-        if randstate:
-            random.setstate(randstate)
-        else:
-            random.setstate(self.random_state[floor - 1])
+        # 乱数のシード設定
+        seed = self.randseed + floor - 1
+        random.seed(seed)
         # 迷路を再作成
         self.initialize()
         self.dig()
@@ -92,7 +87,6 @@ class Maze():
         # 部屋の出現確率を設定
         if self.room_init is None:
             room = random.randrange(101)
-            #print('room_chance = ' + str(room))
             self.room_chance = room
         # 壁で埋める
         self.maze_wall = []

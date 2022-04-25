@@ -31,20 +31,11 @@ CREATE TABLE maze (
   , floor INTEGER
   , size_x INTEGER
   , size_y INTEGER
-  , mapping TEXT
+  , mapping BLOB
   , stairs_up_x INTEGER
   , stairs_up_y INTEGER
   , stairs_down_x INTEGER
   , stairs_down_y INTEGER
-  , PRIMARY KEY(id, floor)
-);
-
-CREATE TABLE random_state (
-    id INTEGER
-  , floor INTEGER
-  , version INTEGER
-  , internalstate BLOB
-  , gauss_next BLOB
   , PRIMARY KEY(id, floor)
 );
 '''
@@ -150,38 +141,6 @@ SET size_x = :size_x
   , stairs_up_y = :stairs_up_y
   , stairs_down_x = :stairs_down_x
   , stairs_down_y = :stairs_down_y
-WHERE id = :id
-  AND floor = :floor
-'''
-
-# 乱数状態テーブルSQL
-SELECT_RANDOM_STATE = '''
-SELECT *
-FROM random_state
-WHERE id = :id
-ORDER BY floor
-'''
-SELECT_RANDOM_STATE_BY_KEY = '''
-SELECT *
-FROM random_state
-WHERE id = :id
-  AND floor = :floor
-'''
-INSERT_RANDOM_STATE = '''
-INSERT INTO random_state
-VALUES (
-    :id
-  , :floor
-  , :version
-  , :internalstate
-  , :gauss_next
-)
-'''
-UPDATE_RANDOM_STATE = '''
-UPDATE random_state
-SET version = :version
-  , internalstate = :internalstate
-  , gauss_next = :gauss_next
 WHERE id = :id
   AND floor = :floor
 '''

@@ -81,17 +81,6 @@ class SaveData():
             print(e)
         return rows
     
-    def load_random_state(self):
-        """ ロード（乱数状態） """
-        row = None
-        try:
-            dic = {'id' : self.ID}
-            self.cur.execute(sql.SELECT_RANDOM_STATE, dic)
-            rows = self.cur.fetchall()
-        except Exception as e:
-            print(e)
-        return rows
-    
     # セーブ
     def save_player(self, dic):
         """ セーブ（プレイヤー情報） """
@@ -134,23 +123,6 @@ class SaveData():
                     self.cur.execute(sql.INSERT_MAZE, dic)
                 else:
                     self.cur.execute(sql.UPDATE_MAZE, dic)
-        except Exception as e:
-            print(e)
-            self.conn.rollback()
-        finally:
-            self.conn.commit()
-    
-    def save_random_state(self, list_data):
-        """ セーブ（乱数状態） """
-        try:
-            for dic in list_data:
-                dic['id'] = self.ID
-                self.cur.execute(sql.SELECT_RANDOM_STATE_BY_KEY, dic)
-                row = self.cur.fetchone()
-                if row is None:
-                    self.cur.execute(sql.INSERT_RANDOM_STATE, dic)
-                else:
-                    self.cur.execute(sql.UPDATE_RANDOM_STATE, dic)
         except Exception as e:
             print(e)
             self.conn.rollback()

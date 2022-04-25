@@ -339,22 +339,6 @@ class Game():
             dic['stairs_down_y'] = stairs_down_y
             list_maze.append(dic)
         obj_save.save_maze(list_maze)
-        # 乱数状態
-        list_random_state = []
-        for i, randstate in enumerate(self.mz.random_state):
-            dic = {}
-            floor = i + 1
-            version = randstate[0]
-            internalstate = b''
-            for val in randstate[1]:
-                internalstate += val.to_bytes(4, 'little')
-            gauss_next = randstate[2]
-            dic['floor'] = floor
-            dic['version'] = version
-            dic['internalstate'] = internalstate
-            dic['gauss_next'] = gauss_next
-            list_random_state.append(dic)
-        obj_save.save_random_state(list_random_state)
         # セーブデータ接続終了
         obj_save.close_db()
         self.bind_id = self.root.bind('<KeyPress>', self.key_press)
@@ -371,7 +355,6 @@ class Game():
         row_pl = obj_save.load_player()
         row_count = obj_save.load_count_key()
         rows_maze = obj_save.load_maze(self.mz.width, self.mz.height)
-        rows_randstate = obj_save.load_random_state()
         # セーブデータ接続終了
         obj_save.close_db()
         # 迷路関連（セーブデータの有無を調べるため最初にロード）
@@ -419,19 +402,8 @@ class Game():
         self.count_key['save'] = row_count['save']
         # ロード回数はカウント
         self.count_key['load'] = row_count['load'] + 1
-        # 乱数状態
-        self.mz.random_state = []
-        for row in rows_randstate:
-            version = row['version']
-            data = row['internalstate']
-            internalstate = []
-            for i in range(0, len(data), 4):
-                val = int.from_bytes(data[i:i+4], 'little')
-                internalstate.append(val)
-            gauss_next = row['gauss_next']
-            self.mz.random_state.append(
-                    (version, tuple(internalstate), gauss_next))
         # 迷路再作成
+        self.mz.randseed = self.seed
         self.mz.back_maze(self.pl.floor)
         self.bind_id = self.root.bind('<KeyPress>', self.key_press)
 
